@@ -152,6 +152,7 @@ function labelMatches(category: Category, terms: string[]) {
 }
 
 function resolveImportantEvent(categories: Category[], direction: Direction) {
+  // Map noisy model labels into the few alert types the UI is designed to communicate clearly.
   const doorbell = categories.find((category) =>
     labelMatches(category, IMPORTANT_LABELS.doorbell),
   )
@@ -193,6 +194,7 @@ function appendChunk(store: AudioChunkStore, chunk: Float32Array, maxLength: num
 }
 
 function estimateDirection(leftRms: number, rightRms: number, channelCount: number) {
+  // Stereo balance is a coarse cue, but it is enough to show left/front/right visual guidance.
   if (channelCount < 2) {
     return 'unknown' satisfies Direction
   }
@@ -242,6 +244,7 @@ function App() {
   }, [])
 
   async function ensureClassifier() {
+    // Lazy-load YAMNet assets so the app shell can render before the model is ready.
     if (classifierRef.current) {
       return classifierRef.current
     }
@@ -277,6 +280,7 @@ function App() {
   }
 
   function startSpeechRecognition() {
+    // Browser speech recognition runs beside YAMNet to catch the configured name call.
     if (!supportsSpeechRecognition || !watchedName.trim()) {
       return
     }
@@ -346,6 +350,7 @@ function App() {
   }
 
   async function startListening() {
+    // Start one microphone graph that feeds level meters, direction estimates, and model inference.
     try {
       const classifier = await ensureClassifier()
       const browserWindow = window as BrowserAudioWindow
