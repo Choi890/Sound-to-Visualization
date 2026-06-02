@@ -152,7 +152,8 @@ function labelMatches(category: Category, terms: string[]) {
 }
 
 function resolveImportantEvent(categories: Category[], direction: Direction) {
-  // Map noisy model labels into the few alert types the UI is designed to communicate clearly.
+  // YAMNet은 많은 라벨을 반환하지만, 화면은 사용자가 바로 이해할 수 있는 알림만 보여준다.
+  // 여기서 doorbell/siren 관련 라벨을 찾아 앱의 SoundEvent 형태로 변환한다.
   const doorbell = categories.find((category) =>
     labelMatches(category, IMPORTANT_LABELS.doorbell),
   )
@@ -194,7 +195,8 @@ function appendChunk(store: AudioChunkStore, chunk: Float32Array, maxLength: num
 }
 
 function estimateDirection(leftRms: number, rightRms: number, channelCount: number) {
-  // Stereo balance is a coarse cue, but it is enough to show left/front/right visual guidance.
+  // 좌우 채널 RMS 차이로 소리 방향을 대략 추정한다.
+  // 정확한 공간 추적은 아니지만, 청각 보조 UI에서 왼쪽/정면/오른쪽 안내를 주기에는 충분한 단서다.
   if (channelCount < 2) {
     return 'unknown' satisfies Direction
   }
@@ -244,7 +246,8 @@ function App() {
   }, [])
 
   async function ensureClassifier() {
-    // Lazy-load YAMNet assets so the app shell can render before the model is ready.
+    // YAMNet 모델과 WASM 파일은 무겁기 때문에 감지를 시작할 때 lazy-load한다.
+    // 이미 로드된 classifier가 있으면 재사용해서 모델 초기화 시간을 반복해서 쓰지 않는다.
     if (classifierRef.current) {
       return classifierRef.current
     }
@@ -280,7 +283,8 @@ function App() {
   }
 
   function startSpeechRecognition() {
-    // Browser speech recognition runs beside YAMNet to catch the configured name call.
+    // 이름 호출 감지는 YAMNet 대신 브라우저 SpeechRecognition을 병행 사용한다.
+    // 사용자가 저장한 이름이 인식 결과에 포함되면 name 이벤트를 만들어 방향 정보와 함께 표시한다.
     if (!supportsSpeechRecognition || !watchedName.trim()) {
       return
     }
@@ -350,7 +354,8 @@ function App() {
   }
 
   async function startListening() {
-    // Start one microphone graph that feeds level meters, direction estimates, and model inference.
+    // 마이크 스트림 하나를 Web Audio 그래프로 연결한다.
+    // ScriptProcessor에서 레벨, 좌우 방향, 최근 샘플 버퍼를 만들고 일정 주기마다 YAMNet 분류를 실행한다.
     try {
       const classifier = await ensureClassifier()
       const browserWindow = window as BrowserAudioWindow
